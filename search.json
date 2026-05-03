@@ -1,0 +1,86 @@
+[
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "Pablo Ibieta",
+    "section": "",
+    "text": "Order By\n       Default\n         \n          Date - Oldest\n        \n         \n          Date - Newest\n        \n         \n          Title\n        \n         \n          Reading Time (Low to High)\n        \n         \n          Reading Time (High to Low)\n        \n     \n  \n    \n      \n      \n    \n\n\n\n\n\nWelcome\n\n\n\n\n\n\nmeta\n\n\n\nWhat this blog is for, and how it’s put together.\n\n\n\n\n\nMay 2, 2026\n\n\n1 min\n\n\n\n\n\n\n\nMutual information sees what correlation can’t\n\n\n\n\n\n\ninformation-theory\n\n\nstatistics\n\n\nsimulation\n\n\n\nA short note on why mutual information is the right generalization of Pearson correlation — and a simulation that shows the gap. \n\n\n\n\n\nMay 2, 2026\n\n\n3 min\n\n\n\n\n\n\nNo matching items"
+  },
+  {
+    "objectID": "posts/mutual-information-vs-correlation/index.html",
+    "href": "posts/mutual-information-vs-correlation/index.html",
+    "title": "Mutual information sees what correlation can’t",
+    "section": "",
+    "text": "Pearson correlation is so familiar it’s easy to forget it only sees linear dependence. Two variables can be deterministically related and have correlation exactly zero. Mutual information doesn’t have that blind spot, and looking at why is a clean way into information theory."
+  },
+  {
+    "objectID": "posts/mutual-information-vs-correlation/index.html#definitions",
+    "href": "posts/mutual-information-vs-correlation/index.html#definitions",
+    "title": "Mutual information sees what correlation can’t",
+    "section": "Definitions",
+    "text": "Definitions\nFor continuous random variables X and Y with joint density p(x, y) and marginals p(x), p(y), the mutual information is\n\nI(X; Y) \\;=\\; \\iint p(x, y) \\, \\log \\frac{p(x, y)}{p(x)\\, p(y)} \\, dx\\, dy.\n\\tag{1}\nEquivalently, I(X; Y) = H(X) + H(Y) - H(X, Y), where H is differential entropy. Two facts make this the natural quantity to reach for:\n\n\n\n\n\n\nProperties of mutual information\n\n\n\n\nNon-negativity. I(X; Y) \\geq 0, with equality iff X \\perp Y.\nInvariance. I is invariant under any invertible transformation of X or Y separately. Pearson’s \\rho is not.\n\n\n\nProperty (2) is the punchline. If you stretch, log-transform, or reorder the support of X — anything reversible — the dependence structure with Y doesn’t actually change, and I(X; Y) agrees. Pearson reports a different number every time."
+  },
+  {
+    "objectID": "posts/mutual-information-vs-correlation/index.html#the-simulation",
+    "href": "posts/mutual-information-vs-correlation/index.html#the-simulation",
+    "title": "Mutual information sees what correlation can’t",
+    "section": "The simulation",
+    "text": "The simulation\nLet X \\sim \\mathcal{U}(-1, 1) and Y = X^2 + \\varepsilon, with \\varepsilon \\sim \\mathcal{N}(0, \\sigma^2). The relationship is deterministic up to noise, but it’s symmetric around zero, so any linear summary of dependence cancels out. We’ll compute Pearson’s \\rho and a kNN estimator (Kraskov et al., 2004) of I(X; Y) across noise levels.\n\nimport numpy as np\nimport matplotlib.pyplot as plt\nfrom scipy.stats import pearsonr\nfrom sklearn.feature_selection import mutual_info_regression\n\nrng = np.random.default_rng(7)\nn = 4_000\n\ndef sample(sigma):\n    x = rng.uniform(-1, 1, size=n)\n    y = x**2 + rng.normal(0, sigma, size=n)\n    return x, y\n\nsigmas = np.linspace(0.0, 0.8, 9)\nrho, mi = [], []\nfor s in sigmas:\n    x, y = sample(s)\n    rho.append(pearsonr(x, y).statistic)\n    mi.append(\n        mutual_info_regression(x.reshape(-1, 1), y, random_state=0)[0]\n    )\nrho = np.asarray(rho)\nmi  = np.asarray(mi)\n\n\nfig, ax = plt.subplots(1, 2, figsize=(8.4, 3.4), constrained_layout=True)\n\nx0, y0 = sample(0.05)\nax[0].scatter(x0, y0, s=4, alpha=0.4)\nax[0].set_title(r\"$Y = X^2 + \\varepsilon$, $\\sigma = 0.05$\")\nax[0].set_xlabel(\"X\"); ax[0].set_ylabel(\"Y\")\n\nax[1].plot(sigmas, np.abs(rho), marker=\"o\", label=r\"$|\\rho|$ (Pearson)\")\nax[1].plot(sigmas, mi,         marker=\"s\", label=r\"$I(X;Y)$ (kNN, nats)\")\nax[1].set_xlabel(r\"noise $\\sigma$\"); ax[1].set_ylabel(\"dependence\")\nax[1].legend(frameon=False)\n\nplt.show()\n\n\n\n\n\n\n\nFigure 1: Pearson correlation stays near zero across all noise levels, while mutual information correctly identifies the strong nonlinear dependence at low \\sigma and decays as noise grows.\n\n\n\n\n\nFigure 1 is the whole story. The left panel shows the parabolic relationship — about as obviously dependent as two variables get. On the right, |\\rho| hovers near zero across the entire noise range, while the kNN mutual-information estimator shows exactly the curve you’d hope for: large at low noise, decaying smoothly as \\sigma grows."
+  },
+  {
+    "objectID": "posts/mutual-information-vs-correlation/index.html#why-this-matters-in-practice",
+    "href": "posts/mutual-information-vs-correlation/index.html#why-this-matters-in-practice",
+    "title": "Mutual information sees what correlation can’t",
+    "section": "Why this matters in practice",
+    "text": "Why this matters in practice\nTwo takeaways I keep coming back to:\n\nFeature screening with correlation can silently miss nonlinear predictors. If your screening step is “drop features with |\\rho| &lt; \\tau,” you’ve thrown away the parabola. Mutual-information screening is the right default for nonlinear models.\nIndependence testing is not the same as decorrelation. Useful reminder when you’re checking residuals or testing instrument exclusion: zero correlation does not buy independence, and I(X; Y) = 0 does.\n\nA sharper treatment of why I is the unique measure satisfying a short list of natural axioms is in Cover & Thomas (2006) chapter 2; for the estimator used above, see Kraskov et al. (2004).\n\n\n\n\n\n\nOne liner\n\n\n\n\\rho measures linear alignment; I measures any statistical dependence at all."
+  },
+  {
+    "objectID": "posts/mutual-information-vs-correlation/index.html#references",
+    "href": "posts/mutual-information-vs-correlation/index.html#references",
+    "title": "Mutual information sees what correlation can’t",
+    "section": "References",
+    "text": "References\n\n\nCover, T. M., & Thomas, J. A. (2006). Elements of information theory (2nd ed.). Wiley-Interscience.\n\n\nKraskov, A., Stögbauer, H., & Grassberger, P. (2004). Estimating mutual information. Physical Review E, 69(6), 066138. https://doi.org/10.1103/PhysRevE.69.066138"
+  },
+  {
+    "objectID": "posts/welcome/index.html",
+    "href": "posts/welcome/index.html",
+    "title": "Welcome",
+    "section": "",
+    "text": "This is the first post, so it’s mostly housekeeping."
+  },
+  {
+    "objectID": "posts/welcome/index.html#what-i-want-to-write-about",
+    "href": "posts/welcome/index.html#what-i-want-to-write-about",
+    "title": "Welcome",
+    "section": "What I want to write about",
+    "text": "What I want to write about\nThe short list:\n\nInformation theory — entropy, mutual information, channels, and what they actually buy you in inference and ML.\nCausal inference and econometrics — identification, estimators, the gap between “I have a coefficient” and “I have a causal effect.”\nMachine learning — methods I’m trying to understand well enough to explain, plus the occasional grumble about benchmarks.\nPhysics — mostly statistical mechanics and the bits that overlap with information theory and probability."
+  },
+  {
+    "objectID": "posts/welcome/index.html#how-posts-are-built",
+    "href": "posts/welcome/index.html#how-posts-are-built",
+    "title": "Welcome",
+    "section": "How posts are built",
+    "text": "How posts are built\nEvery post is a .qmd file — markdown plus executable code chunks. Math is written in LaTeX and rendered with KaTeX. Citations come from a single references.bib and are formatted in APA. The rendered HTML is built by GitHub Actions and served from GitHub Pages.\nIf a post claims something computational, the simulation that backs it up is in the same file and you can see the source via the &lt;/&gt; Code button in the top right."
+  },
+  {
+    "objectID": "posts/welcome/index.html#comments-corrections",
+    "href": "posts/welcome/index.html#comments-corrections",
+    "title": "Welcome",
+    "section": "Comments / corrections",
+    "text": "Comments / corrections\nThere aren’t comments yet (and I’m not sure I want them). For now, if you spot a mistake, open an issue on the repo."
+  },
+  {
+    "objectID": "about.html",
+    "href": "about.html",
+    "title": "About",
+    "section": "",
+    "text": "I write about the places where probability, physics, and inference meet — mostly information theory, causal inference, econometrics, and machine learning, with the occasional detour into the physics that motivated me to learn this stuff in the first place."
+  },
+  {
+    "objectID": "about.html#what-youll-find-here",
+    "href": "about.html#what-youll-find-here",
+    "title": "About",
+    "section": "What you’ll find here",
+    "text": "What you’ll find here\nPosts here tend to be one of three things:\n\nWorked notes — me working through a paper or technique carefully enough that I’d be willing to be quizzed on it.\nShort essays — opinionated takes on methodology, usually written after a debate I’ve had with myself or a colleague.\nSimulations — small computational experiments that test whether an intuition actually survives contact with data.\n\nIf anything here is wrong (and some of it surely is), please open an issue on the repo — I’d rather be corrected than confidently mistaken."
+  }
+]

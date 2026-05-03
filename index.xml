@@ -1,0 +1,359 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss  xmlns:atom="http://www.w3.org/2005/Atom" 
+      xmlns:media="http://search.yahoo.com/mrss/" 
+      xmlns:content="http://purl.org/rss/1.0/modules/content/" 
+      xmlns:dc="http://purl.org/dc/elements/1.1/" 
+      version="2.0">
+<channel>
+<title>Pablo Ibieta</title>
+<link>https://pibieta.github.io/</link>
+<atom:link href="https://pibieta.github.io/index.xml" rel="self" type="application/rss+xml"/>
+<description>Notes on data science, machine learning, physics, information theory,
+econometrics, and causal inference.
+</description>
+<generator>quarto-1.5.57</generator>
+<lastBuildDate>Sat, 02 May 2026 00:00:00 GMT</lastBuildDate>
+<item>
+  <title>Welcome</title>
+  <dc:creator>Pablo Ibieta</dc:creator>
+  <link>https://pibieta.github.io/posts/welcome/</link>
+  <description><![CDATA[ 
+
+
+
+
+<p>This is the first post, so it’s mostly housekeeping.</p>
+<section id="what-i-want-to-write-about" class="level2">
+<h2 class="anchored" data-anchor-id="what-i-want-to-write-about">What I want to write about</h2>
+<p>The short list:</p>
+<ul>
+<li><strong>Information theory</strong> — entropy, mutual information, channels, and what they actually buy you in inference and ML.</li>
+<li><strong>Causal inference and econometrics</strong> — identification, estimators, the gap between “I have a coefficient” and “I have a causal effect.”</li>
+<li><strong>Machine learning</strong> — methods I’m trying to understand well enough to explain, plus the occasional grumble about benchmarks.</li>
+<li><strong>Physics</strong> — mostly statistical mechanics and the bits that overlap with information theory and probability.</li>
+</ul>
+</section>
+<section id="how-posts-are-built" class="level2">
+<h2 class="anchored" data-anchor-id="how-posts-are-built">How posts are built</h2>
+<p>Every post is a <code>.qmd</code> file — markdown plus executable code chunks. Math is written in LaTeX and rendered with KaTeX. Citations come from a single <code>references.bib</code> and are formatted in APA. The rendered HTML is built by GitHub Actions and served from GitHub Pages.</p>
+<p>If a post claims something computational, the simulation that backs it up is in the same file and you can see the source via the <em>&lt;/&gt; Code</em> button in the top right.</p>
+</section>
+<section id="comments-corrections" class="level2">
+<h2 class="anchored" data-anchor-id="comments-corrections">Comments / corrections</h2>
+<p>There aren’t comments yet (and I’m not sure I want them). For now, if you spot a mistake, open an <a href="https://github.com/pibieta/pibieta.github.io/issues">issue on the repo</a>.</p>
+
+
+<!-- -->
+
+</section>
+
+ ]]></description>
+  <category>meta</category>
+  <guid>https://pibieta.github.io/posts/welcome/</guid>
+  <pubDate>Sat, 02 May 2026 00:00:00 GMT</pubDate>
+</item>
+<item>
+  <title>Mutual information sees what correlation can’t</title>
+  <dc:creator>Pablo Ibieta</dc:creator>
+  <link>https://pibieta.github.io/posts/mutual-information-vs-correlation/</link>
+  <description><![CDATA[ 
+
+
+
+
+<p>Pearson correlation is so familiar it’s easy to forget it only sees <em>linear</em> dependence. Two variables can be deterministically related and have correlation exactly zero. Mutual information doesn’t have that blind spot, and looking at why is a clean way into information theory.</p>
+<section id="definitions" class="level2">
+<h2 class="anchored" data-anchor-id="definitions">Definitions</h2>
+<p>For continuous random variables <img src="https://latex.codecogs.com/png.latex?X"> and <img src="https://latex.codecogs.com/png.latex?Y"> with joint density <img src="https://latex.codecogs.com/png.latex?p(x,%20y)"> and marginals <img src="https://latex.codecogs.com/png.latex?p(x),%20p(y)">, the <strong>mutual information</strong> is</p>
+<p><span id="eq-mi"><img src="https://latex.codecogs.com/png.latex?%0AI(X;%20Y)%20%5C;=%5C;%20%5Ciint%20p(x,%20y)%20%5C,%20%5Clog%20%5Cfrac%7Bp(x,%20y)%7D%7Bp(x)%5C,%20p(y)%7D%20%5C,%20dx%5C,%20dy.%0A%5Ctag%7B1%7D"></span></p>
+<p>Equivalently, <img src="https://latex.codecogs.com/png.latex?I(X;%20Y)%20=%20H(X)%20+%20H(Y)%20-%20H(X,%20Y)">, where <img src="https://latex.codecogs.com/png.latex?H"> is differential entropy. Two facts make this the natural quantity to reach for:</p>
+<div class="callout callout-style-simple callout-note callout-titled" title="Properties of mutual information">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Properties of mutual information
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ol type="1">
+<li><strong>Non-negativity.</strong> <img src="https://latex.codecogs.com/png.latex?I(X;%20Y)%20%5Cgeq%200">, with equality iff <img src="https://latex.codecogs.com/png.latex?X%20%5Cperp%20Y">.</li>
+<li><strong>Invariance.</strong> <img src="https://latex.codecogs.com/png.latex?I"> is invariant under any invertible transformation of <img src="https://latex.codecogs.com/png.latex?X"> or <img src="https://latex.codecogs.com/png.latex?Y"> separately. Pearson’s <img src="https://latex.codecogs.com/png.latex?%5Crho"> is not.</li>
+</ol>
+</div>
+</div>
+<p>Property (2) is the punchline. If you stretch, log-transform, or reorder the support of <img src="https://latex.codecogs.com/png.latex?X"> — anything reversible — the dependence structure with <img src="https://latex.codecogs.com/png.latex?Y"> doesn’t actually change, and <img src="https://latex.codecogs.com/png.latex?I(X;%20Y)"> agrees. Pearson reports a different number every time.</p>
+</section>
+<section id="the-simulation" class="level2">
+<h2 class="anchored" data-anchor-id="the-simulation">The simulation</h2>
+<p>Let <img src="https://latex.codecogs.com/png.latex?X%20%5Csim%20%5Cmathcal%7BU%7D(-1,%201)"> and <img src="https://latex.codecogs.com/png.latex?Y%20=%20X%5E2%20+%20%5Cvarepsilon">, with <img src="https://latex.codecogs.com/png.latex?%5Cvarepsilon%20%5Csim%20%5Cmathcal%7BN%7D(0,%20%5Csigma%5E2)">. The relationship is deterministic up to noise, but it’s symmetric around zero, so any linear summary of dependence cancels out. We’ll compute Pearson’s <img src="https://latex.codecogs.com/png.latex?%5Crho"> and a kNN estimator <span class="citation" data-cites="kraskov2004">(Kraskov et al., 2004)</span> of <img src="https://latex.codecogs.com/png.latex?I(X;%20Y)"> across noise levels.</p>
+<div id="setup" class="cell" data-execution_count="1">
+<div class="sourceCode cell-code" id="cb1" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">import</span> numpy <span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">as</span> np</span>
+<span id="cb1-2"><span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">import</span> matplotlib.pyplot <span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">as</span> plt</span>
+<span id="cb1-3"><span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">from</span> scipy.stats <span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">import</span> pearsonr</span>
+<span id="cb1-4"><span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">from</span> sklearn.feature_selection <span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">import</span> mutual_info_regression</span>
+<span id="cb1-5"></span>
+<span id="cb1-6">rng <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> np.random.default_rng(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">7</span>)</span>
+<span id="cb1-7">n <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">4_000</span></span>
+<span id="cb1-8"></span>
+<span id="cb1-9"><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">def</span> sample(sigma):</span>
+<span id="cb1-10">    x <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> rng.uniform(<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>, size<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span>n)</span>
+<span id="cb1-11">    y <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> x<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">**</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span> <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> rng.normal(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, sigma, size<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span>n)</span>
+<span id="cb1-12">    <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">return</span> x, y</span>
+<span id="cb1-13"></span>
+<span id="cb1-14">sigmas <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> np.linspace(<span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.0</span>, <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.8</span>, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">9</span>)</span>
+<span id="cb1-15">rho, mi <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> [], []</span>
+<span id="cb1-16"><span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">for</span> s <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">in</span> sigmas:</span>
+<span id="cb1-17">    x, y <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> sample(s)</span>
+<span id="cb1-18">    rho.append(pearsonr(x, y).statistic)</span>
+<span id="cb1-19">    mi.append(</span>
+<span id="cb1-20">        mutual_info_regression(x.reshape(<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>), y, random_state<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>)[<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>]</span>
+<span id="cb1-21">    )</span>
+<span id="cb1-22">rho <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> np.asarray(rho)</span>
+<span id="cb1-23">mi  <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> np.asarray(mi)</span></code></pre></div>
+</div>
+<div id="cell-fig-mi-vs-rho" class="cell" data-execution_count="2">
+<div class="sourceCode cell-code" id="cb2" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1">fig, ax <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> plt.subplots(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>, figsize<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span>(<span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">8.4</span>, <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">3.4</span>), constrained_layout<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">True</span>)</span>
+<span id="cb2-2"></span>
+<span id="cb2-3">x0, y0 <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> sample(<span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.05</span>)</span>
+<span id="cb2-4">ax[<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>].scatter(x0, y0, s<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">4</span>, alpha<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.4</span>)</span>
+<span id="cb2-5">ax[<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>].set_title(<span class="vs" style="color: #20794D;
+background-color: null;
+font-style: inherit;">r"$Y = X^2 + \varepsilon$, $\sigma = 0.05$"</span>)</span>
+<span id="cb2-6">ax[<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>].set_xlabel(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"X"</span>)<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">;</span> ax[<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>].set_ylabel(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Y"</span>)</span>
+<span id="cb2-7"></span>
+<span id="cb2-8">ax[<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>].plot(sigmas, np.<span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">abs</span>(rho), marker<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"o"</span>, label<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="vs" style="color: #20794D;
+background-color: null;
+font-style: inherit;">r"$|\rho|$ (Pearson)"</span>)</span>
+<span id="cb2-9">ax[<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>].plot(sigmas, mi,         marker<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"s"</span>, label<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="vs" style="color: #20794D;
+background-color: null;
+font-style: inherit;">r"$I(X;Y)$ (kNN, nats)"</span>)</span>
+<span id="cb2-10">ax[<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>].set_xlabel(<span class="vs" style="color: #20794D;
+background-color: null;
+font-style: inherit;">r"noise $\sigma$"</span>)<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">;</span> ax[<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>].set_ylabel(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"dependence"</span>)</span>
+<span id="cb2-11">ax[<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>].legend(frameon<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">False</span>)</span>
+<span id="cb2-12"></span>
+<span id="cb2-13">plt.show()</span></code></pre></div>
+<div class="cell-output cell-output-display">
+<div id="fig-mi-vs-rho" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-mi-vs-rho-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="https://pibieta.github.io/posts/mutual-information-vs-correlation/index_files/figure-html/fig-mi-vs-rho-output-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-mi-vs-rho-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1: Pearson correlation stays near zero across all noise levels, while mutual information correctly identifies the strong nonlinear dependence at low <img src="https://latex.codecogs.com/png.latex?%5Csigma"> and decays as noise grows.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>Figure&nbsp;1 is the whole story. The left panel shows the parabolic relationship — about as obviously <em>dependent</em> as two variables get. On the right, <img src="https://latex.codecogs.com/png.latex?%7C%5Crho%7C"> hovers near zero across the entire noise range, while the kNN mutual-information estimator shows exactly the curve you’d hope for: large at low noise, decaying smoothly as <img src="https://latex.codecogs.com/png.latex?%5Csigma"> grows.</p>
+</section>
+<section id="why-this-matters-in-practice" class="level2">
+<h2 class="anchored" data-anchor-id="why-this-matters-in-practice">Why this matters in practice</h2>
+<p>Two takeaways I keep coming back to:</p>
+<ol type="1">
+<li><em>Feature screening with correlation can silently miss nonlinear predictors.</em> If your screening step is “drop features with <img src="https://latex.codecogs.com/png.latex?%7C%5Crho%7C%20%3C%20%5Ctau">,” you’ve thrown away the parabola. Mutual-information screening is the right default for nonlinear models.</li>
+<li><em>Independence testing is not the same as decorrelation.</em> Useful reminder when you’re checking residuals or testing instrument exclusion: zero correlation does not buy independence, and <img src="https://latex.codecogs.com/png.latex?I(X;%20Y)%20=%200"> does.</li>
+</ol>
+<p>A sharper treatment of why <img src="https://latex.codecogs.com/png.latex?I"> is the <em>unique</em> measure satisfying a short list of natural axioms is in <span class="citation" data-cites="cover2006">Cover &amp; Thomas (2006)</span> chapter 2; for the estimator used above, see <span class="citation" data-cites="kraskov2004">Kraskov et al. (2004)</span>.</p>
+<div class="callout callout-style-simple callout-tip callout-titled" title="One liner">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+One liner
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><img src="https://latex.codecogs.com/png.latex?%5Crho"> measures <em>linear</em> alignment; <img src="https://latex.codecogs.com/png.latex?I"> measures <em>any</em> statistical dependence at all.</p>
+</div>
+</div>
+</section>
+<section id="references" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="references">References</h2>
+<div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" data-line-spacing="2">
+<div id="ref-cover2006" class="csl-entry">
+Cover, T. M., &amp; Thomas, J. A. (2006). <em>Elements of information theory</em> (2nd ed.). Wiley-Interscience.
+</div>
+<div id="ref-kraskov2004" class="csl-entry">
+Kraskov, A., Stögbauer, H., &amp; Grassberger, P. (2004). Estimating mutual information. <em>Physical Review E</em>, <em>69</em>(6), 066138. <a href="https://doi.org/10.1103/PhysRevE.69.066138">https://doi.org/10.1103/PhysRevE.69.066138</a>
+</div>
+</div>
+
+
+<!-- -->
+
+</section>
+
+ ]]></description>
+  <category>information-theory</category>
+  <category>statistics</category>
+  <category>simulation</category>
+  <guid>https://pibieta.github.io/posts/mutual-information-vs-correlation/</guid>
+  <pubDate>Sat, 02 May 2026 00:00:00 GMT</pubDate>
+</item>
+</channel>
+</rss>
