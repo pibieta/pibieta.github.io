@@ -2,18 +2,22 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://pibieta.github.io/index.html</loc>
-    <lastmod>2026-05-03T16:36:09.861Z</lastmod>
+    <lastmod>2026-05-03T23:26:25.245Z</lastmod>
   </url>
   <url>
     <loc>https://pibieta.github.io/posts/mutual-information-vs-correlation/index.html</loc>
-    <lastmod>2026-05-03T16:36:09.861Z</lastmod>
+    <lastmod>2026-05-03T23:26:25.246Z</lastmod>
   </url>
   <url>
     <loc>https://pibieta.github.io/posts/welcome/index.html</loc>
-    <lastmod>2026-05-03T16:36:09.861Z</lastmod>
+    <lastmod>2026-05-03T23:26:25.246Z</lastmod>
+  </url>
+  <url>
+    <loc>https://pibieta.github.io/posts/cmi-is-log-loss-gain/index.html</loc>
+    <lastmod>2026-05-03T23:26:25.246Z</lastmod>
   </url>
   <url>
     <loc>https://pibieta.github.io/about.html</loc>
-    <lastmod>2026-05-03T16:36:09.861Z</lastmod>
+    <lastmod>2026-05-03T23:26:25.245Z</lastmod>
   </url>
 </urlset>

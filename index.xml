@@ -12,7 +12,579 @@
 econometrics, and causal inference.
 </description>
 <generator>quarto-1.5.57</generator>
-<lastBuildDate>Sat, 02 May 2026 00:00:00 GMT</lastBuildDate>
+<lastBuildDate>Sun, 03 May 2026 00:00:00 GMT</lastBuildDate>
+<item>
+  <title>Conditional mutual information is just log-loss gain</title>
+  <dc:creator>Pablo Ibieta</dc:creator>
+  <link>https://pibieta.github.io/posts/cmi-is-log-loss-gain/</link>
+  <description><![CDATA[ 
+
+
+
+
+<p>A <a href="../mutual-information-vs-correlation/">previous post</a> used mutual information to detect dependence that correlation couldn’t see. The natural next question is conditional: <em>given</em> that I already know <img src="https://latex.codecogs.com/png.latex?Z">, does <img src="https://latex.codecogs.com/png.latex?S"> carry any further information about <img src="https://latex.codecogs.com/png.latex?Y">? In ML terms, this is <em>the</em> feature- or score-evaluation question — does adding this thing to a model that already uses everything else move the needle?</p>
+<p>The right object is <strong>conditional mutual information</strong>:</p>
+<p><img src="https://latex.codecogs.com/png.latex?%0AI(S;%20Y%20%5Cmid%20Z)%20%5C;=%5C;%20H(Y%20%5Cmid%20Z)%20-%20H(Y%20%5Cmid%20S,%20Z),%0A"></p>
+<p>i.e.&nbsp;the reduction in residual uncertainty about <img src="https://latex.codecogs.com/png.latex?Y"> once we observe <img src="https://latex.codecogs.com/png.latex?S">, having already conditioned on <img src="https://latex.codecogs.com/png.latex?Z"> <span class="citation" data-cites="cover2006">(Cover &amp; Thomas, 2006)</span>. It is non-negative, zero iff <img src="https://latex.codecogs.com/png.latex?S%20%5Cperp%20Y%20%5Cmid%20Z">, and the magnitude measures <em>how much</em> that conditional independence fails. It’s also, in spite of how it looks, almost free to estimate — which is the point of this post.</p>
+<section id="the-identity" class="level2">
+<h2 class="anchored" data-anchor-id="the-identity">The identity</h2>
+<p>When the output variable <img src="https://latex.codecogs.com/png.latex?Y"> is binary, conditional entropy has a particularly clean form. Writing <img src="https://latex.codecogs.com/png.latex?H_b(p)%20=%20-p%20%5Clog%20p%20-%20(1-p)%20%5Clog(1-p)"> for the entropy of a Bernoulli<img src="https://latex.codecogs.com/png.latex?(p)">,</p>
+<p><img src="https://latex.codecogs.com/png.latex?%0AH(Y%20%5Cmid%20X)%20=%20%5Cmathbb%7BE%7D_X%5C!%5Cleft%5BH_b%5C!%5Cleft(p(Y=1%20%5Cmid%20X)%5Cright)%5Cright%5D.%0A"></p>
+<p>That is: average <img src="https://latex.codecogs.com/png.latex?H_b"> over the marginal distribution of <img src="https://latex.codecogs.com/png.latex?X">, evaluated at the conditional probability the data-generating process actually assigns at each <img src="https://latex.codecogs.com/png.latex?X">. Conditional entropy in the binary target setup is just the <em>expected coin-flip uncertainty</em>, where the bias of the coin depends on the example.</p>
+<p>The same <img src="https://latex.codecogs.com/png.latex?H_b"> shows up from the model training side. With the per-example log-loss</p>
+<p><img src="https://latex.codecogs.com/png.latex?%0A%5Cell(y,%20p)%20=%20-y%20%5Clog%20p%20-%20(1-y)%20%5Clog(1-p),%0A"></p>
+<p>a one-line check shows that when a model outputs the <em>true</em> conditional probability <img src="https://latex.codecogs.com/png.latex?p(Y=1%20%5Cmid%20X)">, its expected loss equals exactly the binary entropy of that probability:</p>
+<p><img src="https://latex.codecogs.com/png.latex?%0A%5Cmathbb%7BE%7D%5C!%5Cleft%5B%5Cell(Y,%20p(Y=1%20%5Cmid%20X))%20%5Cmid%20X%5Cright%5D%0A%5C;=%5C;%0AH_b%5C!%5Cleft(p(Y=1%20%5Cmid%20X)%5Cright).%0A"></p>
+<p>This isn’t a coincidence — cross-entropy is a <em>proper</em> scoring rule, so its expected value is minimized exactly at the truth, and the minimum equals the entropy of the truth. Anything above this floor is a misspecification penalty.</p>
+<p>Plug both into the entropy-reduction definition and the result is a clean identity:</p>
+<p><span id="eq-loglossgain"><img src="https://latex.codecogs.com/png.latex?%0AI(S;%20Y%20%5Cmid%20Z)%20%5C;=%5C;%20%5Cmathbb%7BE%7D%5C!%5Cleft%5B%5C,%0A%20%20%5Cell%5C!%5Cleft(Y,%20p(Y=1%20%5Cmid%20Z)%5Cright)%20-%20%5Cell%5C!%5Cleft(Y,%20p(Y=1%20%5Cmid%20S,%20Z)%5Cright)%0A%5C,%5Cright%5D.%0A%5Ctag%7B1%7D"></span></p>
+<p>Read in English: <em>CMI is the expected drop in log-loss between a model that uses <img src="https://latex.codecogs.com/png.latex?Z"> alone and a model that uses <img src="https://latex.codecogs.com/png.latex?(S,%20Z)">, evaluated at the truth.</em> Every binary classifier you have ever trained already computes the right-hand side on its validation data. Two such classifiers and a subtraction give an information-theoretic estimate.</p>
+</section>
+<section id="the-catch-cross-fitting-in-one-paragraph" class="level2">
+<h2 class="anchored" data-anchor-id="the-catch-cross-fitting-in-one-paragraph">The catch (cross-fitting in one paragraph)</h2>
+<p>Equation&nbsp;1 holds at the true conditionals <img src="https://latex.codecogs.com/png.latex?p(Y=1%20%5Cmid%20Z)"> and <img src="https://latex.codecogs.com/png.latex?p(Y=1%20%5Cmid%20S,%20Z)">. We don’t have those — we have fitted models <img src="https://latex.codecogs.com/png.latex?%5Chat%7Bp%7D_0(Z)"> and <img src="https://latex.codecogs.com/png.latex?%5Chat%7Bp%7D_1(S,%20Z)">. The trouble is what happens when we evaluate those fitted models’ log-losses on the same data we trained them on.</p>
+<p>In-sample log-loss is biased downward. A fitted model has tuned its predictions to match the specific observations it saw, including their noise, so the loss on those observations is systematically lower than the loss the same model would incur on a fresh draw. That bias is not equal across the two models. The full model uses <img src="https://latex.codecogs.com/png.latex?(S,%20Z)"> and therefore has strictly more capacity to fit noise than the baseline that uses <img src="https://latex.codecogs.com/png.latex?Z"> alone, so its in-sample loss is <em>more</em> optimistic. The CMI estimator is the difference of those two losses, and subtracting two downward-biased quantities doesn’t cancel the bias — it preserves the asymmetry, inflating the estimate.</p>
+<p>The cleanest way to see this: imagine <img src="https://latex.codecogs.com/png.latex?S"> carries zero information about <img src="https://latex.codecogs.com/png.latex?Y"> given <img src="https://latex.codecogs.com/png.latex?Z">, so the true CMI is exactly zero. The full model can still fit spurious correlations between <img src="https://latex.codecogs.com/png.latex?S"> and <img src="https://latex.codecogs.com/png.latex?Y"> in the training sample; the baseline can’t, because it never sees <img src="https://latex.codecogs.com/png.latex?S">. The naive in-sample estimator will report a positive value where the truth is zero. The bias points upward — toward more apparent CMI than there actually is.</p>
+<p>The fix is K-fold <strong>cross-fitting</strong>, which evaluates every loss on data the model hasn’t seen during training:</p>
+<ol type="1">
+<li>Partition the data into <img src="https://latex.codecogs.com/png.latex?K"> disjoint folds.</li>
+<li>For each fold <img src="https://latex.codecogs.com/png.latex?k">: fit <img src="https://latex.codecogs.com/png.latex?%5Chat%7Bp%7D_0"> and <img src="https://latex.codecogs.com/png.latex?%5Chat%7Bp%7D_1"> on the data <em>outside</em> fold <img src="https://latex.codecogs.com/png.latex?k">, then compute the per-example log-loss difference for every example <em>inside</em> fold <img src="https://latex.codecogs.com/png.latex?k">.</li>
+<li>Average those per-example differences across all examples (equivalently, across folds).</li>
+</ol>
+<p>Same idea as Chernozhukov et al.’s debiased ML <span class="citation" data-cites="chernozhukov2018">(Chernozhukov et al., 2018)</span> — the auxiliaries are nuisances, and we want their contribution to the downstream estimator to come from out-of-sample predictions only.</p>
+</section>
+<section id="demonstration" class="level2">
+<h2 class="anchored" data-anchor-id="demonstration">Demonstration</h2>
+<p>The simulation has two jobs. First, give us a setup where the true <img src="https://latex.codecogs.com/png.latex?I(X_2;%20Y%20%5Cmid%20X_1)"> is computable to arbitrary precision, so there’s a reference curve the estimator can be checked against. Second, sweep through a single parameter that moves the conditional CMI smoothly from its maximum down to exactly zero — so we can see whether the cross-fitted estimator tracks that variation continuously, and whether it correctly hits zero in the limit. A jointly Gaussian setup with one correlation knob serves both jobs cleanly.</p>
+<p>Concretely: take <img src="https://latex.codecogs.com/png.latex?X_1,%20%5Ceta%20%5Coverset%7B%5Ctext%7Biid%7D%7D%7B%5Csim%7D%20%5Cmathcal%7BN%7D(0,%201)">, set</p>
+<p><img src="https://latex.codecogs.com/png.latex?%0AX_2%20=%20%5Calpha%20X_1%20+%20%5Csqrt%7B1%20-%20%5Calpha%5E2%7D%5C,%5Ceta,%0A"></p>
+<p>and generate <img src="https://latex.codecogs.com/png.latex?Y%20%5Csim%20%5Cmathrm%7BBernoulli%7D%5C!%5Cleft(%5Csigma(%5Cbeta_0%20+%20%5Cbeta_1%20X_1%20+%20%5Cbeta_2%20X_2)%5Cright)"> with <img src="https://latex.codecogs.com/png.latex?%5Calpha%20%5Cin%20%5B0,%201)">. Two facts about this construction matter for the test. The marginal of <img src="https://latex.codecogs.com/png.latex?X_2"> is a standard Gaussian for every value of <img src="https://latex.codecogs.com/png.latex?%5Calpha"> — only its dependence on <img src="https://latex.codecogs.com/png.latex?X_1"> changes. And the conditional <img src="https://latex.codecogs.com/png.latex?X_2%20%5Cmid%20X_1"> has variance <img src="https://latex.codecogs.com/png.latex?1%20-%20%5Calpha%5E2">, which collapses to zero as <img src="https://latex.codecogs.com/png.latex?%5Calpha%20%5Cto%201">. In that limit <img src="https://latex.codecogs.com/png.latex?X_2"> becomes a deterministic linear function of <img src="https://latex.codecogs.com/png.latex?X_1">, so anything <img src="https://latex.codecogs.com/png.latex?X_2"> tells us about <img src="https://latex.codecogs.com/png.latex?Y"> is already implicit in <img src="https://latex.codecogs.com/png.latex?X_1">, and <img src="https://latex.codecogs.com/png.latex?I(X_2;%20Y%20%5Cmid%20X_1)"> must equal zero. At the other end, <img src="https://latex.codecogs.com/png.latex?%5Calpha%20=%200">, the predictors are independent and <img src="https://latex.codecogs.com/png.latex?X_2"> contributes its full conditional information. The estimator’s job is to trace that decay.</p>
+<p>Computing the truth is direct. The full conditional <img src="https://latex.codecogs.com/png.latex?p(Y=1%20%5Cmid%20X_1,%20X_2)%20=%20%5Csigma(%5Cbeta_0%20+%20%5Cbeta_1%20X_1%20+%20%5Cbeta_2%20X_2)"> is closed-form, so <img src="https://latex.codecogs.com/png.latex?H(Y%20%5Cmid%20X_1,%20X_2)"> is one expectation. The marginal <img src="https://latex.codecogs.com/png.latex?p(Y=1%20%5Cmid%20X_1)%20=%20%5Cmathbb%7BE%7D_%7BX_2%20%5Cmid%20X_1%7D%5C!%5Cleft%5B%5Csigma(%5Ccdot)%5Cright%5D"> has no closed form, so we average <img src="https://latex.codecogs.com/png.latex?%5Csigma"> over many draws of <img src="https://latex.codecogs.com/png.latex?X_2%20%5Cmid%20X_1"> for each <img src="https://latex.codecogs.com/png.latex?X_1"> and plug into <img src="https://latex.codecogs.com/png.latex?H_b">. The empirical log-loss-gain estimator uses two gradient-boosted classifiers — one trained on <img src="https://latex.codecogs.com/png.latex?X_1"> alone, one on <img src="https://latex.codecogs.com/png.latex?(X_1,%20X_2)"> — with 5-fold cross-fitting. If equation&nbsp;1 is right and cross-fitting is doing its job, the cross-fitted curve should sit on top of the Monte-Carlo curve across the entire range of <img src="https://latex.codecogs.com/png.latex?%5Calpha">.</p>
+<div id="setup" class="cell" data-execution_count="1">
+<div class="sourceCode cell-code" id="cb1" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">import</span> numpy <span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">as</span> np</span>
+<span id="cb1-2"><span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">import</span> matplotlib.pyplot <span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">as</span> plt</span>
+<span id="cb1-3"><span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">from</span> scipy.special <span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">import</span> expit</span>
+<span id="cb1-4"><span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">from</span> sklearn.ensemble <span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">import</span> GradientBoostingClassifier</span>
+<span id="cb1-5"><span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">from</span> sklearn.model_selection <span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">import</span> KFold</span>
+<span id="cb1-6"></span>
+<span id="cb1-7">beta0, beta1, beta2 <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span><span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.3</span>, <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1.0</span>, <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1.0</span></span>
+<span id="cb1-8">LOSS <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">lambda</span> y, p: <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span>y<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span>np.log(p) <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> (<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span><span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span>y)<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span>np.log(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span><span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span>p)</span>
+<span id="cb1-9"></span>
+<span id="cb1-10"><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">def</span> H_b(p, eps<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1e-12</span>):</span>
+<span id="cb1-11">    p <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> np.clip(p, eps, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span><span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span>eps)</span>
+<span id="cb1-12">    <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">return</span> <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span>p<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span>np.log(p) <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> (<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span><span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span>p)<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span>np.log(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span><span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span>p)</span>
+<span id="cb1-13"></span>
+<span id="cb1-14"><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">def</span> make_data(alpha, n, seed):</span>
+<span id="cb1-15">    r  <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> np.random.default_rng(seed)</span>
+<span id="cb1-16">    X1 <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> r.standard_normal(n)</span>
+<span id="cb1-17">    X2 <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> alpha<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span>X1 <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> np.sqrt(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span><span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span>alpha<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">**</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>)<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span>r.standard_normal(n)</span>
+<span id="cb1-18">    Y  <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> r.binomial(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>, expit(beta0 <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> beta1<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span>X1 <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> beta2<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span>X2))</span>
+<span id="cb1-19">    <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">return</span> X1, X2, Y</span>
+<span id="cb1-20"></span>
+<span id="cb1-21"><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">def</span> truth_cmi(alpha, n_outer<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">20_000</span>, n_inner<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">300</span>, seed<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>):</span>
+<span id="cb1-22">    <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">"""Closed-form-up-to-MC ground truth I(X2; Y | X1)."""</span></span>
+<span id="cb1-23">    r   <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> np.random.default_rng(seed)</span>
+<span id="cb1-24">    X1  <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> r.standard_normal(n_outer)</span>
+<span id="cb1-25">    X2  <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> alpha<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span>X1 <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> np.sqrt(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span><span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span>alpha<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">**</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>)<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span>r.standard_normal(n_outer)</span>
+<span id="cb1-26">    H_full <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> H_b(expit(beta0 <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> beta1<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span>X1 <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> beta2<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span>X2)).mean()</span>
+<span id="cb1-27">    eta_in <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> r.standard_normal((n_outer, n_inner))</span>
+<span id="cb1-28">    X2_in  <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> alpha<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span>X1[:, <span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">None</span>] <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> np.sqrt(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span><span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span>alpha<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">**</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>)<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span>eta_in</span>
+<span id="cb1-29">    p_marg <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> expit(beta0 <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> beta1<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span>X1[:, <span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">None</span>] <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> beta2<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span>X2_in).mean(axis<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>)</span>
+<span id="cb1-30">    <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">return</span> H_b(p_marg).mean() <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> H_full</span>
+<span id="cb1-31"></span>
+<span id="cb1-32"><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">def</span> cross_fitted_cmi(X1, X2, Y, K<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">5</span>, seed<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>):</span>
+<span id="cb1-33">    <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">"""Plug in @eq-loglossgain with K-fold cross-fitted auxiliaries."""</span></span>
+<span id="cb1-34">    Xfull <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> np.column_stack([X1, X2])</span>
+<span id="cb1-35">    fold_means <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> []</span>
+<span id="cb1-36">    <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">for</span> tr, te <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">in</span> KFold(K, shuffle<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">True</span>, random_state<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span>seed).split(X1):</span>
+<span id="cb1-37">        m_r <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> GradientBoostingClassifier(max_depth<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">3</span>, n_estimators<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">120</span>,</span>
+<span id="cb1-38">                                         random_state<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span>seed)</span>
+<span id="cb1-39">        m_f <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> GradientBoostingClassifier(max_depth<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">3</span>, n_estimators<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">120</span>,</span>
+<span id="cb1-40">                                         random_state<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span>seed)</span>
+<span id="cb1-41">        m_r.fit(X1[tr].reshape(<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>,<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>), Y[tr])</span>
+<span id="cb1-42">        m_f.fit(Xfull[tr],            Y[tr])</span>
+<span id="cb1-43">        p_r <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> np.clip(m_r.predict_proba(X1[te].reshape(<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>,<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>))[:,<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>], <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1e-12</span>, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span><span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span><span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1e-12</span>)</span>
+<span id="cb1-44">        p_f <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> np.clip(m_f.predict_proba(Xfull[te])[:,<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>],            <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1e-12</span>, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span><span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span><span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1e-12</span>)</span>
+<span id="cb1-45">        fold_means.append((LOSS(Y[te], p_r) <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> LOSS(Y[te], p_f)).mean())</span>
+<span id="cb1-46">    fm <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> np.array(fold_means)</span>
+<span id="cb1-47">    <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">return</span> fm.mean(), fm.std(ddof<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>) <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> np.sqrt(K)</span>
+<span id="cb1-48"></span>
+<span id="cb1-49">alphas <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> np.linspace(<span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.0</span>, <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.95</span>, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">7</span>)</span>
+<span id="cb1-50">truth  <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> np.array([truth_cmi(a) <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">for</span> a <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">in</span> alphas])</span>
+<span id="cb1-51">emp, se <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> <span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">zip</span>(<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span>[cross_fitted_cmi(<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span>make_data(a, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">8000</span>, seed<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">int</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">100</span><span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span>a)<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>))</span>
+<span id="cb1-52">                <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">for</span> a <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">in</span> alphas])</span>
+<span id="cb1-53">emp, se <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> np.array(emp), np.array(se)</span></code></pre></div>
+</div>
+<div id="cell-fig-cmi-truth-vs-estimate" class="cell" data-execution_count="2">
+<div class="sourceCode cell-code" id="cb2" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1">fig, ax <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> plt.subplots(figsize<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">7</span>, <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">3.6</span>), constrained_layout<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">True</span>)</span>
+<span id="cb2-2">ax.plot(alphas, truth, lw<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>, label<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"truth (Monte-Carlo)"</span>)</span>
+<span id="cb2-3">ax.errorbar(alphas, emp, yerr<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span>se, fmt<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"o"</span>, capsize<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">3</span>,</span>
+<span id="cb2-4">            label<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"cross-fitted log-loss gain"</span>)</span>
+<span id="cb2-5">ax.set_xlabel(<span class="vs" style="color: #20794D;
+background-color: null;
+font-style: inherit;">r"$\alpha$  (redundancy of $X_2$ given $X_1$)"</span>)</span>
+<span id="cb2-6">ax.set_ylabel(<span class="vs" style="color: #20794D;
+background-color: null;
+font-style: inherit;">r"$I(X_2; Y \mid X_1)$  (nats)"</span>)</span>
+<span id="cb2-7">ax.legend(frameon<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">False</span>)</span>
+<span id="cb2-8">ax.grid(alpha<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.3</span>)</span>
+<span id="cb2-9">plt.show()</span></code></pre></div>
+<div class="cell-output cell-output-display">
+<div id="fig-cmi-truth-vs-estimate" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-cmi-truth-vs-estimate-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="https://pibieta.github.io/posts/cmi-is-log-loss-gain/index_files/figure-html/fig-cmi-truth-vs-estimate-output-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-cmi-truth-vs-estimate-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1: Closed-form <img src="https://latex.codecogs.com/png.latex?I(X_2;%20Y%20%5Cmid%20X_1)"> (line) vs.&nbsp;cross-fitted log-loss-gain estimate (points <img src="https://latex.codecogs.com/png.latex?%5Cpm"> fold-level standard error) as <img src="https://latex.codecogs.com/png.latex?X_2"> becomes redundant given <img src="https://latex.codecogs.com/png.latex?X_1">. Two GBDTs and a subtraction recover the information-theoretic curve across the entire range, including the collapse to zero in the fully redundant regime.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>Two things to notice in Figure&nbsp;1. The first is that the estimator works in the only way that matters: it agrees with the truth. At <img src="https://latex.codecogs.com/png.latex?%5Calpha%20=%200">, the closed-form Monte-Carlo gives <img src="https://latex.codecogs.com/png.latex?I(X_2;%20Y%20%5Cmid%20X_1)%20%5Capprox%200.084"> nats and the cross-fitted log-loss-gain estimator returns the same value to three decimals. The agreement persists across the entire sweep — the cross-fitted points sit within a fold-level standard error of the Monte-Carlo curve everywhere, including the hardest regime where the signal is small. It’s not the magnitude of <img src="https://latex.codecogs.com/png.latex?0.084"> that’s the evidence; it’s that two routes to it — one going through the population entropy gap, one going through finite-sample held-out log-losses — land at the same place.</p>
+<p>The second thing is what the curve’s <em>shape</em> implies for metrics that don’t condition. As <img src="https://latex.codecogs.com/png.latex?%5Calpha"> grows, the marginal AUC of <img src="https://latex.codecogs.com/png.latex?X_2"> against <img src="https://latex.codecogs.com/png.latex?Y"> in this DGP actually <em>increases</em> (from <img src="https://latex.codecogs.com/png.latex?%5Capprox%200.71"> at <img src="https://latex.codecogs.com/png.latex?%5Calpha%20=%200"> to <img src="https://latex.codecogs.com/png.latex?%5Capprox%200.85"> at <img src="https://latex.codecogs.com/png.latex?%5Calpha%20=%200.95">), because <img src="https://latex.codecogs.com/png.latex?X_2"> inherits more of <img src="https://latex.codecogs.com/png.latex?X_1">’s predictive content as the two predictors merge. A marginal-AUC screen would therefore rate <img src="https://latex.codecogs.com/png.latex?X_2"> as <em>more</em> important at <img src="https://latex.codecogs.com/png.latex?%5Calpha%20=%200.95"> than at <img src="https://latex.codecogs.com/png.latex?%5Calpha%20=%200"> — the opposite verdict from CMI, which says <img src="https://latex.codecogs.com/png.latex?X_2">’s conditional contribution given <img src="https://latex.codecogs.com/png.latex?X_1"> has collapsed to zero. Same <img src="https://latex.codecogs.com/png.latex?X_2">, opposite directions. Standalone strength and complementary signal are independent axes, and the conditional form of mutual information is what separates them.</p>
+</section>
+<section id="why-this-matters" class="level2">
+<h2 class="anchored" data-anchor-id="why-this-matters">Why this matters</h2>
+<p>Once equation&nbsp;1 is in hand, several decisions that look unrelated turn out to be the same calculation with different conditioning sets. <em>Does this score generalize to a different target?</em> — pick <img src="https://latex.codecogs.com/png.latex?Z%20=%20Y%5E%7B(1)%7D"> and read <img src="https://latex.codecogs.com/png.latex?I(S%5E%7B(1)%7D;%20Y%5E%7B(2)%7D%20%5Cmid%20Y%5E%7B(1)%7D)">. <em>Should I ensemble two models?</em> — pick <img src="https://latex.codecogs.com/png.latex?Z%20=%20S%5E%7B(2)%7D"> and read <img src="https://latex.codecogs.com/png.latex?I(S%5E%7B(1)%7D;%20Y%5E%7B(2)%7D%20%5Cmid%20S%5E%7B(2)%7D)">. <em>Where in a representation’s interaction hierarchy does signal live?</em> — pick <img src="https://latex.codecogs.com/png.latex?Z%20=%20(R,%20%5CPhi_%7B%3Ck%7D)"> and read <img src="https://latex.codecogs.com/png.latex?%5CDelta_k%20=%20I(Y;%20%5CPhi_k%20%5Cmid%20R,%20%5CPhi_%7B%3Ck%7D)">. Each is the next post in this series; the machinery is identical.</p>
+<div class="callout callout-style-simple callout-tip callout-titled" title="One-liner">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+One-liner
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Conditional mutual information <img src="https://latex.codecogs.com/png.latex?%5C;=%5C;"> expected log-loss reduction. Train two models, subtract, cross-fit. The information-theoretic accounting runs on a loss your training pipeline already computes.</p>
+</div>
+</div>
+</section>
+<section id="references" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="references">References</h2>
+<div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" data-line-spacing="2">
+<div id="ref-chernozhukov2018" class="csl-entry">
+Chernozhukov, V., Chetverikov, D., Demirer, M., Duflo, E., Hansen, C., Newey, W., &amp; Robins, J. (2018). Double/debiased machine learning for treatment and structural parameters. <em>The Econometrics Journal</em>, <em>21</em>(1), C1–C68. <a href="https://doi.org/10.1111/ectj.12097">https://doi.org/10.1111/ectj.12097</a>
+</div>
+<div id="ref-cover2006" class="csl-entry">
+Cover, T. M., &amp; Thomas, J. A. (2006). <em>Elements of information theory</em> (2nd ed.). Wiley-Interscience.
+</div>
+</div>
+
+
+<!-- -->
+
+</section>
+
+ ]]></description>
+  <category>information-theory</category>
+  <category>machine-learning</category>
+  <category>simulation</category>
+  <category>cmi-framework</category>
+  <guid>https://pibieta.github.io/posts/cmi-is-log-loss-gain/</guid>
+  <pubDate>Sun, 03 May 2026 00:00:00 GMT</pubDate>
+</item>
 <item>
   <title>Welcome</title>
   <dc:creator>Pablo Ibieta</dc:creator>

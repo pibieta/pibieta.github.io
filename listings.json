@@ -2,6 +2,7 @@
   {
     "listing": "/index.html",
     "items": [
+      "/posts/cmi-is-log-loss-gain/index.html",
       "/posts/welcome/index.html",
       "/posts/mutual-information-vs-correlation/index.html"
     ]
