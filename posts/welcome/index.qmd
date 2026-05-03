@@ -1,0 +1,38 @@
+---
+title: "Welcome"
+description: "What this blog is for, and how it's put together."
+date: 2026-05-02
+categories: [meta]
+draft: false
+---
+
+This is the first post, so it's mostly housekeeping.
+
+## What I want to write about
+
+The short list:
+
+- **Information theory** — entropy, mutual information, channels, and what
+  they actually buy you in inference and ML.
+- **Causal inference and econometrics** — identification, estimators,
+  the gap between "I have a coefficient" and "I have a causal effect."
+- **Machine learning** — methods I'm trying to understand well enough to
+  explain, plus the occasional grumble about benchmarks.
+- **Physics** — mostly statistical mechanics and the bits that overlap
+  with information theory and probability.
+
+## How posts are built
+
+Every post is a `.qmd` file — markdown plus executable code chunks.
+Math is written in LaTeX and rendered with KaTeX. Citations come from
+a single `references.bib` and are formatted in APA. The rendered HTML
+is built by GitHub Actions and served from GitHub Pages.
+
+If a post claims something computational, the simulation that backs it
+up is in the same file and you can see the source via the *</> Code* button
+in the top right.
+
+## Comments / corrections
+
+There aren't comments yet (and I'm not sure I want them). For now, if you
+spot a mistake, open an [issue on the repo](https://github.com/pibieta/pibieta.github.io/issues).

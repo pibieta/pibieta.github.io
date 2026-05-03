@@ -1,0 +1,33 @@
+---
+title: "About"
+image: profile.jpg
+about:
+  template: trestles
+  links:
+    - icon: github
+      text: GitHub
+      href: https://github.com/pibieta
+    - icon: envelope
+      text: Email
+      href: mailto:ibieta.pablo@gmail.com
+---
+
+I write about the places where probability, physics, and inference meet —
+mostly **information theory**, **causal inference**, **econometrics**, and
+**machine learning**, with the occasional detour into the physics that
+motivated me to learn this stuff in the first place.
+
+## What you'll find here
+
+Posts here tend to be one of three things:
+
+- *Worked notes* — me working through a paper or technique carefully enough
+  that I'd be willing to be quizzed on it.
+- *Short essays* — opinionated takes on methodology, usually written
+  after a debate I've had with myself or a colleague.
+- *Simulations* — small computational experiments that test whether an
+  intuition actually survives contact with data.
+
+If anything here is wrong (and some of it surely is), please open an issue
+on the [repo](https://github.com/pibieta/pibieta.github.io) — I'd rather
+be corrected than confidently mistaken.

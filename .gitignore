@@ -1,0 +1,22 @@
+# Quarto
+/.quarto/
+/_site/
+/_freeze/
+*.html
+!index.html
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+**/*.quarto_ipynb

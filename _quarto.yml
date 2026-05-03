@@ -1,0 +1,79 @@
+project:
+  type: website
+  output-dir: _site
+  preview:
+    port: 4848
+    browser: true
+
+website:
+  title: "Pablo Ibieta"
+  description: |
+    Notes on data science, machine learning, physics, information theory,
+    econometrics, and causal inference.
+  site-url: "https://pibieta.github.io"
+  repo-url: "https://github.com/pibieta/pibieta.github.io"
+  repo-actions: [edit, source, issue]
+  google-analytics: ""   # paste your GA4 measurement ID here when you have one
+  open-graph: true
+  twitter-card: true
+
+  navbar:
+    pinned: true
+    left:
+      - href: index.qmd
+        text: Posts
+      - href: about.qmd
+        text: About
+    right:
+      - icon: github
+        href: https://github.com/pibieta
+        aria-label: GitHub
+      - icon: rss
+        href: index.xml
+        aria-label: RSS feed
+
+  page-footer:
+    left: "© 2026 Pablo Ibieta · Built with [Quarto](https://quarto.org)."
+    right:
+      - icon: github
+        href: https://github.com/pibieta
+
+format:
+  html:
+    theme:
+      light: [cosmo, theme-light.scss]
+      dark:  [darkly, theme-dark.scss]
+    css: styles.css
+    toc: true
+    toc-depth: 3
+    toc-location: right
+    number-sections: false
+    fig-cap-location: bottom
+    tbl-cap-location: top
+    link-external-newwindow: true
+    code-fold: false
+    code-copy: true
+    code-tools:
+      source: true
+      toggle: false
+    code-overflow: wrap
+    highlight-style: github
+    smooth-scroll: true
+    fontsize: 1.05em
+    linestretch: 1.65
+    citations-hover: true
+    crossrefs-hover: true
+
+# Math: KaTeX is fast & GitHub-Pages friendly. Switch to `mathjax` if you
+# need extended LaTeX (e.g. \begin{align*}, custom macros, \mathbb).
+html-math-method: katex
+
+# Bibliography & citations
+bibliography: references.bib
+csl: apa.csl
+
+# Cache rendered chunks so re-renders don't re-execute every Python cell.
+execute:
+  freeze: auto
+  warning: false
+  message: false

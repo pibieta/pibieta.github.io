@@ -1,0 +1,16 @@
+---
+title: "Pablo Ibieta"
+subtitle: "Notes on data science, machine learning, physics, information theory, econometrics, and causal inference."
+listing:
+  contents: posts
+  sort: "date desc"
+  type: default
+  categories: true
+  sort-ui: [date, title, reading-time]
+  filter-ui: true
+  feed: true
+  fields: [date, title, reading-time, description, categories]
+  page-size: 15
+page-layout: full
+title-block-banner: false
+---
